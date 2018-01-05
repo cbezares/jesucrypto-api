@@ -1,0 +1,39 @@
+version: '2'
+
+services:
+  database:
+    image: postgres:9.5
+    container_name: ${DATABASE_CONTAINER_NAME}
+    environment:
+      SERVICE: database
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+     - "${POSTGRES_PORT}:5432"
+    volumes:
+      - /var/lib/postgresql/data
+
+  app:
+    container_name: ${APP_CONTAINER_NAME}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # command: /sbin/my_init -- bundle exec rails s -b 0.0.0.0 -p 3000
+    ports:
+     - "${APP_PORT}:3000"
+     - "${SSH_PORT}:22" # ssh connections
+    volumes:
+     - .:${APP_DIR}
+     - /usr/local/rvm/gems/ruby-2.4.1
+    links:
+      - database
+    environment:
+      SERVICE: app
+      ENV: ${ENV}
+      APP_DIR: ${APP_DIR}
+      PASSENGER_APP_ENV: ${ENV}
+      POSTGRES_DB_NAME: ${POSTGRES_DB_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TERM: xterm-256color
