@@ -1,0 +1,17 @@
+# Logfile created on 2018-01-14 23:16:40 +0000 by logger.rb/56815
+D, [2018-01-14T23:16:40.387904 #1024] DEBUG -- : ERROR ON GETTING SURBTC STATUS: #<NoMethodError: undefined method `get_exchanges' for CryptoData:Module>
+D, [2018-01-15T04:09:12.555742 #699] DEBUG -- : ERROR ON GETTING ORIONX STATUS: #<JSON::ParserError: 743: unexpected token at '<html>
+<head><title>504 Gateway Time-out</title></head>
+<body bgcolor="white">
+<center><h1>504 Gateway Time-out</h1></center>
+</body>
+</html>
+'>
+D, [2018-01-15T04:09:59.366675 #713] DEBUG -- : ERROR ON GETTING ORIONX STATUS: #<JSON::ParserError: 743: unexpected token at '<html>
+<head><title>504 Gateway Time-out</title></head>
+<body bgcolor="white">
+<center><h1>504 Gateway Time-out</h1></center>
+</body>
+</html>
+'>
+D, [2018-01-15T04:22:18.990241 #754] DEBUG -- : ERROR ON GETTING BINANCE STATUS: #<URI::InvalidURIError: bad URI(is not URI?): %20https://api.binance.com/api/v3/ticker/bookTicker?symbol=ETHBTC>

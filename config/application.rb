@@ -4,7 +4,7 @@ require "rails"
 # Pick the frameworks you want:
 require "active_model/railtie"
 require "active_job/railtie"
-require "active_record/railtie"
+# require "active_record/railtie"
 require "action_controller/railtie"
 require "action_mailer/railtie"
 require "action_view/railtie"
@@ -29,5 +29,21 @@ module JesucryptoApi
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # Autoload lib directory
+    config.autoload_paths << Rails.root.join('lib')
+    Dir[File.join(Rails.root, "lib", "ext", "*.rb")].each {|l| require l }
+
+    # # Configure Rake CORS
+    # config.middleware.insert_before 0, "Rack::Cors", logger: (-> { Rails.logger }) do
+    #   allow do
+    #     origins '*'
+
+    #     resource '*',
+    #       headers: :any,
+    #       methods: [:get, :post, :delete, :put, :patch, :options, :head],
+    #       max_age: 0
+    #   end
+    # end
   end
 end
