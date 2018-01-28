@@ -2,12 +2,51 @@ module ExchangesServices
   include CryptoData
   include HTTParty
 
+  FIREBASE_PRIVATE_KEY_STRING = {
+    "type": "service_account",
+    "project_id": ENV['FIREBASE-PROJECT-ID'],
+    "private_key_id": ENV['FIREBASE-PRIVATE-KEY-ID'],
+    "private_key": ENV['FIREBASE-PRIVATE-KEY'],
+    "client_email": ENV['FIREBASE-CLIENT-EMAIL'],
+    "client_id": ENV['FIREBASE-CLIENT-ID'],
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://accounts.google.com/o/oauth2/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-p8jzi%40jesucrypto-api.iam.gserviceaccount.com"
+  }.to_json
+
   class Status
-    def self.update_exchanges exchanges
+    def self.update_exchanges
+      base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
+      firebase = Firebase::Client.new(base_uri, FIREBASE_PRIVATE_KEY_STRING)
+      data = {}
+      fees = {}
+
+      begin
+        CryptoData.get_exchanges.each do |exchange|
+          data[exchange[:codename]] = {}
+          data[exchange[:codename]][:name] = exchange[:name]
+          data[exchange[:codename]][:url] = exchange[:url]
+          data[exchange[:codename]][:markets] = exchange[:markets].map { |m| m.gsub('/', '-') }
+          data[exchange[:codename]][:updated_at] = Firebase::ServerValue::TIMESTAMP
+
+          if exchange[:fees].present?
+            fees[exchange[:codename]] = exchange[:fees]
+            fees[exchange[:codename]][:updated_at] = Firebase::ServerValue::TIMESTAMP
+          end
+        end
+
+        response_data = firebase.update("exchanges", data)
+        response_fees = firebase.update("fees", fees)
+      rescue => e
+        YisusLog.error_debug "ERROR ON UPDATING EXCHANGES DATA AND FEES: #{e.inspect}"
+      end
+    end
+
+    def self.update_prices exchanges
       # exchanges = %w(BDA ORX XAP SXC CLB CMK BSP CBS STT BNC BTK)
       base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
-      private_key_json_string = File.open(Rails.root.join('vendor', 'jesucrypto-api-firebase-adminsdk-p8jzi-56fcabd0fd.json')).read
-      firebase = Firebase::Client.new(base_uri, private_key_json_string)
+      firebase = Firebase::Client.new(base_uri, FIREBASE_PRIVATE_KEY_STRING)
       threads = []
 
       begin
@@ -23,9 +62,8 @@ module ExchangesServices
         end
         threads.each { |thread| thread.join } 
       rescue => e
-        YisusLog.error_debug "ERROR ON UPDATING ALL EXCHANGES STATUSES: #{e.inspect}"
+        YisusLog.error_debug "ERROR ON UPDATING EXCHANGES PRICES: #{e.inspect}"
       end
-      
     end
 
     # SurBTC/Buda API

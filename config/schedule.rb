@@ -20,10 +20,10 @@
 # Learn more: http://github.com/javan/whenever
 set :output, { error: "log/cron_error_log.log", standard: "log/cron_log.log" }
 
-every 10.minutes do
-  rake "exchange:update_important"
-end
+# every 10.minutes do
+#   rake "exchange:update_important"
+# end
 
-every 30.minutes do
-  rake "exchange:update_others"
-end
+# every 30.minutes do
+#   rake "exchange:update_others"
+# end

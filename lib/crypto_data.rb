@@ -14,14 +14,6 @@ module CryptoData
           format: 'json'
         },
         fees: {
-          deposit: {
-            type: 'none',
-            value: 0.0
-          },
-          withdrawal: {
-            type: 'none',
-            value: 0.0
-          },
           buy: {
             type: 'percentage',
             value: 0.65
@@ -29,10 +21,6 @@ module CryptoData
           sell: {
             type: 'percentage',
             value: 0.65
-          },
-          transfer: {
-            type: 'none',
-            value: 0.0
           }
         }
       },

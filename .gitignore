@@ -89,4 +89,4 @@ remote.sh
 
 # Figaro config
 config/application.yml
-# vendor/jesucrypto-api-firebase-adminsdk-p8jzi-56fcabd0fd.json
+vendor/jesucrypto-api-firebase-adminsdk-p8jzi-56fcabd0fd.json
