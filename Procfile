@@ -1,2 +1,2 @@
 web: bundle exec puma -C config/puma.rb
-clock: whenever --update-crontab
+clock: bundle exec clockwork lib/clock.rb

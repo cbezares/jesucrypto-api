@@ -17,7 +17,7 @@ module ExchangesServices
             exchange_data[:markets].each do |market|
               prices    = self.send(exchange_data[:method], market)
               response  = firebase.update("prices/#{exchange}", prices[exchange])
-              YisusLog.debug "#{prices.inspect}"
+              # YisusLog.debug "#{prices.inspect}"
             end
           }
         end
