@@ -53,3 +53,6 @@ gem 'figaro'
 
 # Ruby wrapper for Firebase
 gem 'firebase'
+
+# Cron jobs in Ruby
+gem 'whenever', require: false

@@ -1,18 +1,18 @@
 module ExchangesServices
   include CryptoData
   include HTTParty
-  default_timeout 10
 
   class Status
-    def self.update_all
-      exchanges = %w(BDA ORX XAP SXC CLB CMK BSP CBS STT BNC BTK)
+    def self.update_exchanges exchanges
+      # exchanges = %w(BDA ORX XAP SXC CLB CMK BSP CBS STT BNC BTK)
       base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
       private_key_json_string = File.open(Rails.root.join('vendor', 'jesucrypto-api-firebase-adminsdk-p8jzi-56fcabd0fd.json')).read
       firebase = Firebase::Client.new(base_uri, private_key_json_string)
+      threads = []
 
       begin
         exchanges.each do |exchange|
-          Thread.new {
+          threads << Thread.new {
             exchange_data = CryptoData.get_exchanges.find { |e| e[:codename] == exchange }
             exchange_data[:markets].each do |market|
               prices    = self.send(exchange_data[:method], market)
@@ -21,6 +21,7 @@ module ExchangesServices
             end
           }
         end
+        threads.each { |thread| thread.join } 
       rescue => e
         YisusLog.error_debug "ERROR ON UPDATING ALL EXCHANGES STATUSES: #{e.inspect}"
       end
@@ -51,7 +52,7 @@ module ExchangesServices
         end
         path += '/ticker'
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + '/' + api_data[:version] + path + '.' + api_data[:format]), { timeout: 10.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + '/' + api_data[:version] + path + '.' + api_data[:format]), { timeout: 20.0 })
         r = response = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r["ticker"]["min_ask"][0].to_f, r["ticker"]["max_bid"][0].to_f)
@@ -87,7 +88,7 @@ module ExchangesServices
             'X-ORIONX-APIKEY' => ENV["ORIONX-API-KEY"],
             'X-ORIONX-SIGNATURE' => header_signature.to_s
           },
-          timeout: 10.0
+          timeout: 20.0
         }
 
         response = HTTParty.post(URI.escape(api_data[:base_url]), options)
@@ -110,7 +111,7 @@ module ExchangesServices
 
         path = '/price/' + market
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + path), { timeout: 10.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + path), { timeout: 20.0 })
         r = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r["Ask"].to_f, r["Bid"].to_f)
@@ -131,7 +132,7 @@ module ExchangesServices
         formatted_market = market.nil? ? '' : "/" + market.gsub(/[\/]*BTC[\/]*/,'')
         path = "/apinka/ticker" + formatted_market + "?format=" + api_data[:format]
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + path), { timeout: 10.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + path), { timeout: 60.0 })
         r = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r[formatted_market]["ask"].to_f, r[formatted_market]["bid"].to_f)
@@ -151,7 +152,7 @@ module ExchangesServices
 
         path = market.split('/')[1] + "/ticker?crypto_currency=" + market.split('/')[0]
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/" + path), { timeout: 5.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/" + path), { timeout: 10.0 })
         r = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r["sell"].to_f, r["buy"].to_f)
@@ -171,7 +172,7 @@ module ExchangesServices
 
         path = '/ticker?market=' + market.gsub('/', '')
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 10.0 })
         r = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r["data"][0]["ask"].to_f, r["data"][0]["bid"].to_f)
@@ -192,10 +193,10 @@ module ExchangesServices
         formatted_market1 = market.split('/').join
         formatted_market2 = market.split('/').reverse.join
 
-        response1 = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/quotes/" +  formatted_market1), { timeout: 10.0 })
+        response1 = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/quotes/" +  formatted_market1), { timeout: 20.0 })
         r1 = JSON.parse(response1.body)
 
-        response2 = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/quotes/" +  formatted_market2), { timeout: 10.0 })
+        response2 = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/quotes/" +  formatted_market2), { timeout: 20.0 })
         r2 = JSON.parse(response2.body)
 
         Format.output_prices(exchange_data[:codename], market, r1["fx_etoe"][formatted_market1]["source_amt"], r2["fx_etoe"][formatted_market2]["destination_amt"])
@@ -218,7 +219,7 @@ module ExchangesServices
 
         api_data[:endpoints].each do |endpoint|
           path = '/prices/' + market.gsub('/', '-') + '/' + endpoint
-          response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0, headers: headers })
+          response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 10.0, headers: headers })
           result[endpoint] = JSON.parse(response.body)
         end
 
@@ -261,7 +262,7 @@ module ExchangesServices
           'bchbtc'
         end
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 10.0 })
         r = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r["ask"].to_f, r["bid"].to_f)
@@ -281,7 +282,7 @@ module ExchangesServices
 
         path = '/ticker'
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 10.0 })
         r = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r["data"]["compra"]["usdbtc"].to_f, r["data"]["venta"]["usdbtc"].to_f)
@@ -301,7 +302,7 @@ module ExchangesServices
 
         path = '/ticker/bookTicker?symbol=' + market.gsub('/', '')
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 10.0 })
         r = JSON.parse(response.body)
 
         Format.output_prices(exchange_data[:codename], market, r["askPrice"].to_f, r["bidPrice"].to_f)
