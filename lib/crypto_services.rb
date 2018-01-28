@@ -17,7 +17,7 @@ module CryptoServices
       begin
         # url = "https://bitcoinfees.earn.com/api/v1/fees/recommended"
         url = "https://bitcoinfees.earn.com/fees"
-        response = HTTParty.get(URI.escape(url))
+        response = HTTParty.get(URI.escape(url), { timeout: 10.0 })
         response = JSON.parse(response.body)
         # value = response[velocity] * satoshi
         fee = response["medianTxSize"] * response["fees"][response["bestIndex"]]["maxFee"] * satoshi
@@ -37,7 +37,7 @@ module CryptoServices
       value = 0.0
       begin
         url = "https://mindicador.cl/api/dolar/#{Time.now.strftime('%d-%m-%Y')}"
-        response = HTTParty.get(URI.escape(url))
+        response = HTTParty.get(URI.escape(url), { timeout: 10.0 })
         response = JSON.parse(response.body)
         value = response['serie']['valor']
       rescue => e
@@ -58,7 +58,7 @@ module CryptoServices
 
         path = "/#{api_data[:endpoint]}/#{coin}?convert=#{currency}"
 
-        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path))
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 10.0 })
         response = JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING COIN MARKET CAP STATS: #{e.inspect}"
