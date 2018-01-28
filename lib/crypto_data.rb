@@ -3,9 +3,9 @@ module CryptoData
     [
       { 
         id: 1,
-        name: 'SurBTC',
-        url: 'https://www.surbtc.com',
-        codename: 'SBT',
+        name: 'Buda',
+        url: 'https://www.buda.com',
+        codename: 'BDA',
         markets: ['BTC/CLP', 'ETH/CLP', 'ETH/BTC', 'BCH/CLP', 'BCH/BCP'],
         api: {
           base_url: 'https://www.surbtc.com/api',
@@ -59,7 +59,6 @@ module CryptoData
             value: 0.29
           }
         }
-      }
       },
       { 
         id: 3,
@@ -106,14 +105,13 @@ module CryptoData
             "XMR" => { type: 'number', value: 0.02 }
           }
         }
-      }
       },
       { 
         id: 4,
         name: 'Bitinka',
         url: 'https://www.bitinka.com',
         codename: 'BTK',
-        markets: ['BTC/CLP', 'ETH/BTC'],
+        markets: ['BTC/CLP', 'BTC/USD', 'ETH/BTC', 'BTC/LTC', 'BTC/XRP'],
         api: {
           base_url: 'https://www.bitinka.pe/api',
           format: 'json'
@@ -196,7 +194,7 @@ module CryptoData
         name: 'Xapo',
         url: 'https://app.xapo.com',
         codename: 'XAP',
-        markets: ['USD/BTC'],
+        markets: ['USD/BTC', 'CLP/BTC'],
         api: {
           base_url: 'https://api.xapo.com',
           version: 'v3'
