@@ -44,7 +44,22 @@ module CryptoData
         api: {
           base_url: 'https://api2.orionx.io/graphql',
           version: 'v2'
+        },
+        fees: {
+          withdrawal: {
+            type: 'number',
+            value: 350.0
+          },
+          buy: {
+            type: 'percentage',
+            value: 0.29
+          },
+          sell: {
+            type: 'percentage',
+            value: 0.29
+          }
         }
+      }
       },
       { 
         id: 3,
@@ -54,7 +69,44 @@ module CryptoData
         markets: ['BTC/USD', 'ETH/USD', 'CHA/BTC', 'LTC/USD', 'BCH/USD'],
         api: {
           base_url: 'https://www.southxchange.com/api'
+        },
+        fees: {
+          deposit: {
+            type: 'percentage',
+            value: 10.0
+          },
+          withdrawal: {
+            "BCH" => { type: 'number', value: 0.0005 },
+            "BTC" => { type: 'percentage', value: 0.1 },
+            "CHA" => { type: 'number', value: 0.01 },
+            "DASH" => { type: 'number', value: 0.0001 },
+            "ETH" => { type: 'number', value: 0.002 },
+            "LTC" => { type: 'number', value: 0.001 },
+            "MRN" => { type: 'number', value: 0.001 },
+            "USD" => { type: 'number', value: 0.2 },
+            "XMR" => { type: 'number', value: 0.02 }
+          },
+          buy: {
+            type: 'percentage',
+            value: 0.2
+          },
+          sell: {
+            type: 'percentage',
+            value: 0.2
+          },
+          transfer: {
+            "BCH" => { type: 'number', value: 0.0005 },
+            "BTC" => { type: 'percentage', value: 0.1 },
+            "CHA" => { type: 'number', value: 0.01 },
+            "DASH" => { type: 'number', value: 0.0001 },
+            "ETH" => { type: 'number', value: 0.002 },
+            "LTC" => { type: 'number', value: 0.001 },
+            "MRN" => { type: 'number', value: 0.001 },
+            "USD" => { type: 'number', value: 0.2 },
+            "XMR" => { type: 'number', value: 0.02 }
+          }
         }
+      }
       },
       { 
         id: 4,
@@ -65,6 +117,28 @@ module CryptoData
         api: {
           base_url: 'https://www.bitinka.pe/api',
           format: 'json'
+        },
+        fees: {
+          deposit: {
+            type: 'percentage',
+            value: 1.0
+          },
+          withdrawal: {
+            type: 'percentage',
+            value: 0.15
+          },
+          buy: {
+            type: 'percentage',
+            value: 0.5
+          },
+          sell: {
+            type: 'percentage',
+            value: 0.5
+          },
+          transfer: {
+            type: 'percentage',
+            value: 0.15
+          }
         }
       },
       { 
@@ -76,6 +150,24 @@ module CryptoData
         api: {
           base_url: 'https://api.blinktrade.com/api',
           version: 'v1'
+        },
+        fees: {
+          withdrawal: {
+            type: 'number',
+            value: 0.00029999
+          },
+          buy: {
+            type: 'percentage',
+            value: 0.7
+          },
+          sell: {
+            type: 'percentage',
+            value: 0.7
+          },
+          transfer: {
+            type: 'number',
+            value: 0.00029999
+          }
         }
       },
       { 
@@ -87,6 +179,16 @@ module CryptoData
         api: {
           base_url: 'https://api.cryptomkt.com',
           version: 'v1'
+        },
+        fees: {
+          buy: {
+            type: 'percentage',
+            value: 0.7
+          },
+          sell: {
+            type: 'percentage',
+            value: 0.7
+          }
         }
       },
       { 
@@ -98,6 +200,12 @@ module CryptoData
         api: {
           base_url: 'https://api.xapo.com',
           version: 'v3'
+        },
+        fees: {
+          deposit: {
+            type: 'percentage',
+            value: 4.75
+          }
         }
       },
       { 
@@ -132,6 +240,12 @@ module CryptoData
         api: {
           base_url: 'https://api.satoshitango.com',
           version: 'v2'
+        },
+        fees: {
+          deposit: {
+            type: 'number',
+            value: 20000.0
+          }
         }
       },
       { 
