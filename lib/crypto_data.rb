@@ -8,9 +8,31 @@ module CryptoData
         codename: 'SBT',
         markets: ['BTC/CLP', 'ETH/CLP', 'ETH/BTC', 'BCH/CLP', 'BCH/BCP'],
         api: {
-          endpoint: 'https://www.surbtc.com/api',
+          base_url: 'https://www.surbtc.com/api',
           version: 'v2',
           format: 'json'
+        },
+        fees: {
+          deposit: {
+            type: 'none',
+            value: 0.0
+          },
+          withdrawal: {
+            type: 'none',
+            value: 0.0
+          },
+          buy: {
+            type: 'percentage',
+            value: 0.65
+          },
+          sell: {
+            type: 'percentage',
+            value: 0.65
+          },
+          transfer: {
+            type: 'none',
+            value: 0.0
+          }
         }
       },
       { 
@@ -20,7 +42,8 @@ module CryptoData
         codename: 'ORX',
         markets: ['BTC/CLP','ETH/CLP','LTC/CLP','CHA/CLP','BCH/CLP','DASH/CLP'],
         api: {
-          endpoint: 'https://api.orionx.io/graphql'
+          base_url: 'https://api2.orionx.io/graphql',
+          version: 'v2'
         }
       },
       { 
@@ -30,7 +53,7 @@ module CryptoData
         codename: 'SXC',
         markets: ['BTC/USD', 'ETH/USD', 'CHA/BTC', 'LTC/USD', 'BCH/USD'],
         api: {
-          endpoint: 'https://www.southxchange.com/api'
+          base_url: 'https://www.southxchange.com/api'
         }
       },
       { 
@@ -40,7 +63,7 @@ module CryptoData
         codename: 'BTK',
         markets: ['BTC/CLP', 'ETH/BTC'],
         api: {
-          endpoint: 'https://www.bitinka.pe/api',
+          base_url: 'https://www.bitinka.pe/api',
           format: 'json'
         }
       },
@@ -51,7 +74,7 @@ module CryptoData
         codename: 'CLB',
         markets: ['BTC/CLP'],
         api: {
-          endpoint: 'https://api.blinktrade.com/api',
+          base_url: 'https://api.blinktrade.com/api',
           version: 'v1'
         }
       },
@@ -62,7 +85,7 @@ module CryptoData
         codename: 'CMK',
         markets: ['ETH/CLP', 'ETH/ARS', 'ETH/EUR'],
         api: {
-          endpoint: 'https://api.cryptomkt.com',
+          base_url: 'https://api.cryptomkt.com',
           version: 'v1'
         }
       },
@@ -73,7 +96,7 @@ module CryptoData
         codename: 'XAP',
         markets: ['USD/BTC'],
         api: {
-          endpoint: 'https://api.xapo.com',
+          base_url: 'https://api.xapo.com',
           version: 'v3'
         }
       },
@@ -82,14 +105,23 @@ module CryptoData
         name: 'Coinbase',
         url: 'https://www.coinbase.com',
         codename: 'CBS',
-        markets: ['BTC/USD', 'ETH/USD', 'LTC/USD', 'BCH/USD']
+        markets: ['BTC/USD', 'ETH/USD', 'LTC/USD', 'BCH/USD'],
+        api: {
+          base_url: 'https://api.coinbase.com',
+          version: 'v2',
+          endpoints: ['buy', 'sell', 'spot']
+        }
       },
       { 
         id: 9,
         name: 'Bitstamp',
         url: 'https://www.bitstamp.net',
         codename: 'BSP',
-        markets: ['BTC/USD', 'ETH/USD', 'LTC/USD', 'BCH/USD']
+        markets: ['BTC/USD', 'XRP/USD', 'LTC/USD', 'ETH/USD', 'BCH/USD', 'XRP/BTC', 'LTC/BTC', 'ETH/BTC', 'BCH/BTC'],
+        api: {
+          base_url: 'https://www.bitstamp.net/api',
+          version: 'v2'
+        }
       },
       { 
         id: 10,
@@ -98,7 +130,7 @@ module CryptoData
         codename: 'STT',
         markets: ['BTC/USD', 'BTC/ARS', 'BTC/EUR'],
         api: {
-          endpoint: 'https://api.satoshitango.com',
+          base_url: 'https://api.satoshitango.com',
           version: 'v2'
         }
       },
@@ -109,10 +141,23 @@ module CryptoData
         codename: 'BNC',
         markets: ['LTC/BTC', 'ETH/BTC', 'BCH/BTC'],
         api: {
-          endpoint: 'https://api.binance.com/api',
+          base_url: 'https://api.binance.com/api',
           version: 'v3'
         }
       }
     ]
+  end
+
+  def self.coinmarketcap
+    {
+      name: 'Cryptocurrency Market Capitalizations',
+      coins: %w(bitcoin ethereum ripple bitcoin-cash cardano stellar litecoin iota dash monero),
+      currencies: %w(USD CLP),
+      api: {
+        base_url: 'https://api.coinmarketcap.com',
+        version: 'v1',
+        endpoint: 'ticker'
+      }
+    }
   end
 end

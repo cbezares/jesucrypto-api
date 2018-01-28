@@ -1,4 +1,4 @@
-module ExchangeService
+module ExchangesServices
   include CryptoData
   include HTTParty
 
@@ -26,15 +26,15 @@ module ExchangeService
         end
         path += '/ticker'
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + '/' + api_data[:version] + path + '.' + api_data[:format]))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + '/' + api_data[:version] + path + '.' + api_data[:format]))
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING SURBTC STATUS: #{e.inspect}"
       end
     end
 
     # Orionx API
-    # Doc: http://api.orionx.io/graphiql
+    # Doc: https://orionx.io/developers/docs && https://orionx.io/developers/tutorials/consulta-basica-api
     # Response example:
     #   {"data"=>{"marketOrderBook"=>{"buy"=>[{"limitPrice"=>9210911}], "sell"=>[{"limitPrice"=>9397992}], "spread"=>187081, "mid"=>9304452}}}
     def self.orionx market
@@ -43,16 +43,27 @@ module ExchangeService
 
         body_request = {
           query: "{ marketOrderBook(marketCode: \"#{market.gsub!('/', '')}\", limit: 1) { buy { limitPrice } sell { limitPrice } spread mid } }"
-        }
+        }.to_json
+
+        header_timestamp  = Time.now.to_f.to_s
+        digest            = OpenSSL::Digest.new('sha512')
+        instance          = OpenSSL::HMAC.new(ENV["ORIONX-SECRET-KEY"], digest)
+        header_signature  = instance.update(header_timestamp + body_request)
 
         options = {
-          body: body_request.to_json,
-          headers: { 'Content-Type' => 'application/json' },
+          body: body_request,
+          headers: {
+            'Content-Type' => 'application/json',
+            'Content-Length' => body_request.length.to_s,
+            'X-ORIONX-TIMESTAMP' => header_timestamp,
+            'X-ORIONX-APIKEY' => ENV["ORIONX-API-KEY"],
+            'X-ORIONX-SIGNATURE' => header_signature.to_s
+          },
           timeout: 1000
         }
 
-        response = HTTParty.post(URI.escape(api_data[:endpoint]), options)
-        response = JSON.parse(response.body)
+        response = HTTParty.post(URI.escape(api_data[:base_url]), options)
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING ORIONX STATUS: #{e.inspect}"
       end
@@ -68,8 +79,8 @@ module ExchangeService
 
         path = '/price/' + market
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + path))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + path))
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING SOUTHXCHANGE STATUS: #{e.inspect}"
       end
@@ -86,8 +97,8 @@ module ExchangeService
         market = market.nil? ? '' : "/" + market.gsub!(/[BTC\/]/,'')
         path = "/apinka/ticker" + market + "?format=" + api_data[:format]
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + path))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + path))
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING BITINKA STATUS: #{e.inspect}"
       end
@@ -103,8 +114,8 @@ module ExchangeService
 
         path = market.split('/')[1] + "/ticker?crypto_currency=" + market.split('/')[0]
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + "/" + api_data[:version] + "/" + path))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/" + path))
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING CHILEBIT STATUS: #{e.inspect}"
       end
@@ -120,8 +131,8 @@ module ExchangeService
 
         path = '/ticker?market=' + market.gsub!('/', '')
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + "/" + api_data[:version] + path))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path))
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING CRYPTOMKT STATUS: #{e.inspect}"
       end
@@ -137,10 +148,72 @@ module ExchangeService
 
         path = '/quotes/' + market.gsub!('/', '')
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + "/" + api_data[:version] + path))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path))
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING XAPO STATUS: #{e.inspect}"
+      end
+    end
+
+    # Coinbase API
+    # Doc: https://developers.coinbase.com/api/v2
+    # Response example:
+    #   {"buy":{"data":{"base":"BTC","currency":"USD","amount":"13211.14"}},"sell":{"data":{"base":"BTC","currency":"USD","amount":"12911.46"}},"spot":{"data":{"base":"BTC","currency":"USD","amount":"13012.61"}}}
+    def self.coinbase market
+      begin
+        api_data = CryptoData.get_exchanges.find { |e| e[:codename] == 'CBS' }[:api]
+        result = {}
+
+        market = market.gsub('/', '-')
+
+        headers = { 'CB-VERSION' => "#{Time.now.strftime('%Y-%m-%d')}" }
+
+        api_data[:endpoints].each do |endpoint|
+          path = '/prices/' + market + '/' + endpoint
+          response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), headers: headers)
+          result[endpoint.to_sym] = JSON.parse(response.body)
+        end
+
+        result
+      rescue => e
+        YisusLog.error_debug "ERROR ON GETTING COINBASE STATUS: #{e.inspect}"
+      end
+    end
+
+    # Bitstamp API
+    # Doc: https://www.bitstamp.net/api/
+    # Response example:
+    #   {"high": "14394.36", "last": "12967.73", "timestamp": "1516076157", "bid": "12956.40", "vwap": "13614.63", "volume": "12643.75058221", "low": "12710.00", "ask": "12967.73", "open": "13581.66"}
+    def self.bitstamp market
+      begin
+        api_data = CryptoData.get_exchanges.find { |e| e[:codename] == 'BSP' }[:api]
+
+        path = '/ticker/'
+        path += case market
+        when 'BTC/USD'
+          'btcusd'
+        when 'XRP/USD'
+          'xrpusd'
+        when 'LTC/USD'
+          'xrpbtc'
+        when 'ETH/USD'
+          'ltcusd'
+        when 'BCH/USD'
+          'ltcbtc'
+        when 'XRP/BTC'
+          'ethusd'
+        when 'LTC/BTC'
+          'ethbtc'
+        when 'ETH/BTC'
+          'bchusd'
+        when 'BCH/BTC'
+          'bchbtc'
+        end
+
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path))
+        JSON.parse(response.body)
+      rescue => e
+        YisusLog.error_debug "ERROR ON GETTING BITSTAMP STATUS: #{e.inspect}"
       end
     end
 
@@ -154,10 +227,10 @@ module ExchangeService
 
         path = '/ticker'
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + "/" + api_data[:version] + path))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path))
+        JSON.parse(response.body)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING XAPO STATUS: #{e.inspect}"
+        YisusLog.error_debug "ERROR ON GETTING SATOSHITANGO STATUS: #{e.inspect}"
       end
     end
 
@@ -171,13 +244,30 @@ module ExchangeService
 
         path = '/ticker/bookTicker?symbol=' + market.gsub!('/', '')
 
-        response = HTTParty.get(URI.escape(api_data[:endpoint] + "/" + api_data[:version] + path))
-        response = JSON.parse(response.body)
+        response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path))
+        JSON.parse(response.body)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING BINANCE STATUS: #{e.inspect}"
       end
     end
+  end
 
+  class Format
+    def self.output_json exchange, market, buy, sell
+      {
+        name: exchange.name,
+        codename: exchange.codename,
+        makert: market,
+        price: {
+          buy: buy,
+          sell: sell,
+          mid: (buy + sell) / 2,
+          spread: sell - buy,
+          spread_percentage: ((sell - buy) / sell) * 100
+        },
+        timestamp: Time.now
+      }
+    end
   end
 
 end
