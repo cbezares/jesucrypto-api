@@ -6,7 +6,8 @@ module CryptoData
         name: 'Buda',
         url: 'https://www.buda.com',
         codename: 'BDA',
-        markets: ['BTC/CLP', 'ETH/CLP', 'ETH/BTC', 'BCH/CLP', 'BCH/BCP'],
+        method: :buda,
+        markets: ['BTC/CLP', 'ETH/CLP', 'BCH/CLP'],
         api: {
           base_url: 'https://www.surbtc.com/api',
           version: 'v2',
@@ -40,7 +41,8 @@ module CryptoData
         name: 'Orionx',
         url: 'https://orionx.io',
         codename: 'ORX',
-        markets: ['BTC/CLP','ETH/CLP','LTC/CLP','CHA/CLP','BCH/CLP','DASH/CLP'],
+        method: :orionx,
+        markets: ['BTC/CLP', 'ETH/CLP', 'LTC/CLP', 'CHA/CLP', 'BCH/CLP', 'DASH/CLP', 'XRP/CLP'],
         api: {
           base_url: 'https://api2.orionx.io/graphql',
           version: 'v2'
@@ -65,7 +67,8 @@ module CryptoData
         name: 'Southxchange',
         url: 'https://www.southxchange.com',
         codename: 'SXC',
-        markets: ['BTC/USD', 'ETH/USD', 'CHA/BTC', 'LTC/USD', 'BCH/USD'],
+        method: :southxchange,
+        markets: ['BTC/USD', 'ETH/USD', 'LTC/USD', 'BCH/USD', 'MRN/USD', 'DASH/USD', 'CHA/BTC'],
         api: {
           base_url: 'https://www.southxchange.com/api'
         },
@@ -111,7 +114,8 @@ module CryptoData
         name: 'Bitinka',
         url: 'https://www.bitinka.com',
         codename: 'BTK',
-        markets: ['BTC/CLP', 'BTC/USD', 'ETH/BTC', 'BTC/LTC', 'BTC/XRP'],
+        method: :bitinka,
+        markets: ['BTC/CLP', 'BTC/USD', 'BTC/ETH', 'BTC/LTC', 'BTC/XRP'],
         api: {
           base_url: 'https://www.bitinka.pe/api',
           format: 'json'
@@ -144,6 +148,7 @@ module CryptoData
         name: 'Chilebit',
         url: 'https://chilebit.net',
         codename: 'CLB',
+        method: :chilebit,
         markets: ['BTC/CLP'],
         api: {
           base_url: 'https://api.blinktrade.com/api',
@@ -173,7 +178,8 @@ module CryptoData
         name: 'CryptoMKT',
         url: 'https://www.cryptomkt.com',
         codename: 'CMK',
-        markets: ['ETH/CLP', 'ETH/ARS', 'ETH/EUR'],
+        method: :cryptomkt,
+        markets: ['ETH/CLP'],
         api: {
           base_url: 'https://api.cryptomkt.com',
           version: 'v1'
@@ -194,6 +200,7 @@ module CryptoData
         name: 'Xapo',
         url: 'https://app.xapo.com',
         codename: 'XAP',
+        method: :xapo,
         markets: ['USD/BTC', 'CLP/BTC'],
         api: {
           base_url: 'https://api.xapo.com',
@@ -211,6 +218,7 @@ module CryptoData
         name: 'Coinbase',
         url: 'https://www.coinbase.com',
         codename: 'CBS',
+        method: :coinbase,
         markets: ['BTC/USD', 'ETH/USD', 'LTC/USD', 'BCH/USD'],
         api: {
           base_url: 'https://api.coinbase.com',
@@ -223,7 +231,8 @@ module CryptoData
         name: 'Bitstamp',
         url: 'https://www.bitstamp.net',
         codename: 'BSP',
-        markets: ['BTC/USD', 'XRP/USD', 'LTC/USD', 'ETH/USD', 'BCH/USD', 'XRP/BTC', 'LTC/BTC', 'ETH/BTC', 'BCH/BTC'],
+        method: :bitstamp,
+        markets: ['BTC/USD', 'XRP/USD', 'LTC/USD', 'ETH/USD', 'BCH/USD'],
         api: {
           base_url: 'https://www.bitstamp.net/api',
           version: 'v2'
@@ -234,7 +243,8 @@ module CryptoData
         name: 'SatoshiTango',
         url: 'https://www.satoshitango.com',
         codename: 'STT',
-        markets: ['BTC/USD', 'BTC/ARS', 'BTC/EUR'],
+        method: :satoshitango,
+        markets: ['BTC/USD'],
         api: {
           base_url: 'https://api.satoshitango.com',
           version: 'v2'
@@ -251,7 +261,8 @@ module CryptoData
         name: 'Binance',
         url: 'https://www.binance.com/',
         codename: 'BNC',
-        markets: ['LTC/BTC', 'ETH/BTC', 'BCH/BTC'],
+        method: :binance,
+        markets: ['LTC/BTC', 'ETH/BTC', 'BCH/BTC', 'USDT/BTC'],
         api: {
           base_url: 'https://api.binance.com/api',
           version: 'v3'

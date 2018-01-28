@@ -49,4 +49,7 @@ end
 gem 'tzinfo-data'#, platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 # Simple Rails app configuration
-gem "figaro"
+gem 'figaro'
+
+# Ruby wrapper for Firebase
+gem 'firebase'

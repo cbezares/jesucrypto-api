@@ -4,6 +4,29 @@ module ExchangesServices
   default_timeout 10
 
   class Status
+    def self.update_all
+      exchanges = %w(BDA ORX XAP SXC CLB CMK BSP CBS STT BNC BTK)
+      base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
+      private_key_json_string = File.open(Rails.root.join('vendor', 'jesucrypto-api-firebase-adminsdk-p8jzi-56fcabd0fd.json')).read
+      firebase = Firebase::Client.new(base_uri, private_key_json_string)
+
+      begin
+        exchanges.each do |exchange|
+          Thread.new {
+            exchange_data = CryptoData.get_exchanges.find { |e| e[:codename] == exchange }
+            exchange_data[:markets].each do |market|
+              prices    = self.send(exchange_data[:method], market)
+              response  = firebase.update("prices/#{exchange}", prices[exchange])
+              YisusLog.debug "#{prices.inspect}"
+            end
+          }
+        end
+      rescue => e
+        YisusLog.error_debug "ERROR ON UPDATING ALL EXCHANGES STATUSES: #{e.inspect}"
+      end
+      
+    end
+
     # SurBTC/Buda API
     # Doc: http://api.surbtc.com/
     # Response example:
@@ -31,7 +54,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + '/' + api_data[:version] + path + '.' + api_data[:format]), { timeout: 10.0 })
         r = response = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["ticker"]["min_ask"][0].to_f, r["ticker"]["max_bid"][0].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["ticker"]["min_ask"][0].to_f, r["ticker"]["max_bid"][0].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING BUDA STATUS: #{e.inspect}"
       end
@@ -70,7 +93,7 @@ module ExchangesServices
         response = HTTParty.post(URI.escape(api_data[:base_url]), options)
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["data"]["marketOrderBook"]["buy"][0]["limitPrice"].to_f, r["data"]["marketOrderBook"]["sell"][0]["limitPrice"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["data"]["marketOrderBook"]["sell"][0]["limitPrice"].to_f, r["data"]["marketOrderBook"]["buy"][0]["limitPrice"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING ORIONX STATUS: #{e.inspect}"
       end
@@ -90,7 +113,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + path), { timeout: 10.0 })
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["Ask"].to_f, r["Bid"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["Ask"].to_f, r["Bid"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING SOUTHXCHANGE STATUS: #{e.inspect}"
       end
@@ -111,7 +134,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + path), { timeout: 10.0 })
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r[formatted_market]["ask"].to_f, r[formatted_market]["bid"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r[formatted_market]["ask"].to_f, r[formatted_market]["bid"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING BITINKA STATUS: #{e.inspect}"
       end
@@ -131,7 +154,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/" + path), { timeout: 5.0 })
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["sell"].to_f, r["buy"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["sell"].to_f, r["buy"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING CHILEBIT STATUS: #{e.inspect}"
       end
@@ -151,7 +174,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["data"][0]["ask"].to_f, r["data"][0]["bid"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["data"][0]["ask"].to_f, r["data"][0]["bid"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING CRYPTOMKT STATUS: #{e.inspect}"
       end
@@ -175,7 +198,7 @@ module ExchangesServices
         response2 = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/quotes/" +  formatted_market2), { timeout: 10.0 })
         r2 = JSON.parse(response2.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r1["fx_etoe"][formatted_market1]["source_amt"], r2["fx_etoe"][formatted_market2]["destination_amt"])
+        Format.output_prices(exchange_data[:codename], market, r1["fx_etoe"][formatted_market1]["source_amt"], r2["fx_etoe"][formatted_market2]["destination_amt"])
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING XAPO STATUS: #{e.inspect}"
       end
@@ -195,13 +218,13 @@ module ExchangesServices
 
         api_data[:endpoints].each do |endpoint|
           path = '/prices/' + market.gsub('/', '-') + '/' + endpoint
-          response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), headers: headers, { timeout: 5.0 })
+          response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0, headers: headers })
           result[endpoint] = JSON.parse(response.body)
         end
 
         r = result
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["buy"]["data"]["amount"].to_f, r["sell"]["data"]["amount"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["buy"]["data"]["amount"].to_f, r["sell"]["data"]["amount"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING COINBASE STATUS: #{e.inspect}"
       end
@@ -241,7 +264,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["ask"].to_f, r["bid"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["ask"].to_f, r["bid"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING BITSTAMP STATUS: #{e.inspect}"
       end
@@ -251,7 +274,7 @@ module ExchangesServices
     # Doc: http://satoshitango.github.io/
     # Response example:
     #   {"data":{"venta":{"date":"2018-01-15 03:02:01","usdbtc":"13465.79","arsbtc":"276748.79","arsbtcround":"276749","eurbtc":"11026.62"},"compra":{"date":"2018-01-15 03:02:01","usdbtc":"13616.80","arsbtc":"295269.71","arsbtcround":"295270","eurbtc":"11213.37"}},"execution_time":0.058262825012207}
-    def self.satoshitango
+    def self.satoshitango market
       begin
         exchange_data = CryptoData.get_exchanges.find { |e| e[:codename] == 'STT' }
         api_data      = exchange_data[:api]
@@ -261,7 +284,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, "USD/BTC", r["data"]["compra"]["usdbtc"].to_f, r["data"]["venta"]["usdbtc"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["data"]["compra"]["usdbtc"].to_f, r["data"]["venta"]["usdbtc"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING SATOSHITANGO STATUS: #{e.inspect}"
       end
@@ -281,7 +304,7 @@ module ExchangesServices
         response = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + path), { timeout: 5.0 })
         r = JSON.parse(response.body)
 
-        Format.output_json({ name: exchange_data[:name], codename: exchange_data[:codename] }, market, r["askPrice"].to_f, r["bidPrice"].to_f)
+        Format.output_prices(exchange_data[:codename], market, r["askPrice"].to_f, r["bidPrice"].to_f)
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING BINANCE STATUS: #{e.inspect}"
       end
@@ -289,19 +312,20 @@ module ExchangesServices
   end
 
   class Format
-    def self.output_json exchange, market, buy, sell
+    def self.output_prices exchange, market, buy, sell
+      raise ArgumentError, 'buy value must be an integer or float' unless buy && (buy.is_a?(Integer) || buy.is_a?(Float))
+      raise ArgumentError, 'sell value must be an integer or float' unless sell && (sell.is_a?(Integer) || sell.is_a?(Float))
       {
-        name: exchange[:name],
-        codename: exchange[:codename],
-        market: market,
-        price: {
-          buy: buy,
-          sell: sell,
-          mid: (buy + sell) / 2,
-          spread: buy - sell,
-          spread_percentage: ((buy - sell) / buy) * 100
-        },
-        timestamp: Time.now
+        exchange => {
+          market.gsub('/', '-') => {
+            buy: buy,
+            sell: sell,
+            mid: (buy + sell) / 2,
+            spread: buy - sell,
+            spread_percentage: ((buy - sell) / buy) * 100,
+            timestamp: JSON.parse(Time.now.to_json)
+          }
+        }
       }
     end
   end
