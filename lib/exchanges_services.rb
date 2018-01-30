@@ -44,7 +44,7 @@ module ExchangesServices
       threads = []
       investment_amounts = [100000, 500000, 1000000, 2000000]
       
-      # begin
+      begin
         miner_fees_response = @@firebase.get("miner_fees")
         miner_fees = miner_fees_response.body
 
@@ -59,7 +59,7 @@ module ExchangesServices
         arbitraged_exchanges.each do |exchange|
           exchange[:arbitrages].each do |arbitrage|
             arbitrage[:markets].each do |market|
-              # threads << Thread.new {
+              threads << Thread.new {
                 formatted_market = market.gsub('/', '-')
 
                 if formatted_market.include? "-USD"
@@ -118,16 +118,16 @@ module ExchangesServices
                 }
               
                 @@firebase.update("arbitrages/#{exchange[:codename]}/#{arbitrage[:dest_exchange]}/#{formatted_market}", data)
-              # }
+              }
             end
           end
         end
 
-        # threads.each { |thread| thread.join } 
-      # rescue => e
-        # # YisusLog.error_debug "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
-        # puts "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
-      # end
+        threads.each { |thread| thread.join } 
+      rescue => e
+        # YisusLog.error_debug "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
+        puts "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
+      end
     end
 
     def self.update_exchanges

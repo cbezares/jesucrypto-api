@@ -18,10 +18,11 @@ module Clockwork
     `rake exchange:update_important`
   end
 
-  # every(5.minutes, '[clockwork:exchange:update_others] Updating less important exchange prices.') do
-  #   exchanges = %w(BSP CBS STT BNC BTK)
-  #   ExchangesServices::Status.update_prices(exchanges)
-  # end
+  every(5.minutes, '[clockwork:exchange:update_others] Updating less important exchange prices.') do
+    # exchanges = %w(BSP CBS STT BNC BTK)
+    # ExchangesServices::Status.update_prices(exchanges)
+    `rake exchange:update_others`
+  end
 
   every(1.hour, '[clockwork:exchange:update_miner_fees] Updating miner fees.') do
     # ExchangesServices::Status.update_miner_fees
