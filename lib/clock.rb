@@ -2,9 +2,9 @@ require 'clockwork'
 require './config/boot'
 require './config/environment'
 
-include ExchangesServices
-
 module Clockwork
+
+  include ExchangesServices
 
   handler do |job|
     puts "[clockwork:handler] Running #{job}"
