@@ -5,8 +5,6 @@ require File.expand_path('../../config/environment', __FILE__)
 include Clockwork
 
 module Clockwork
-  include ExchangesServices
-  
   handler do |job|
     puts "[clockwork:handler] Running #{job}"
   end
