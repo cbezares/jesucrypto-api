@@ -1,5 +1,6 @@
 module ExchangesServices
   include CryptoData
+  include CryptoServices
   include HTTParty
 
   FIREBASE_PRIVATE_KEY_STRING = {
@@ -15,10 +16,9 @@ module ExchangesServices
     "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-p8jzi%40jesucrypto-api.iam.gserviceaccount.com"
   }.to_json
 
-  @@base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
-  @@firebase = Firebase::Client.new(@@base_uri, FIREBASE_PRIVATE_KEY_STRING)
-
   class Status
+    @@base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
+    @@firebase = Firebase::Client.new(@@base_uri, FIREBASE_PRIVATE_KEY_STRING)
 
     # XAP -> ORX (BTC)
     # ORX -> XAP (BTC)
@@ -44,18 +44,22 @@ module ExchangesServices
       threads = []
       investment_amounts = [100000, 500000, 1000000, 2000000]
       
-      begin
-        arbitraged_exchanges = CryptoData.get_exchanges.select { |e| e[:arbitrages].present? }
+      # begin
+        miner_fees_response = @@firebase.get("miner_fees")
+        miner_fees = miner_fees_response.body
+
+        exchanges = CryptoData.get_exchanges
+        arbitraged_exchanges = exchanges.select { |e| e[:arbitrages].present? }
 
         arbitraged_exchanges.each do |exchange|
-          response = @@firebase.get("prices/#{exchange[:codename]}")
-          exchange_markets_prices[exchange[:codename]] = response.body
+          prices_response = @@firebase.get("prices/#{exchange[:codename]}")
+          exchange_markets_prices[exchange[:codename]] = prices_response.body
         end
 
         arbitraged_exchanges.each do |exchange|
           exchange[:arbitrages].each do |arbitrage|
             arbitrage[:markets].each do |market|
-              threads << Thread.new {
+              # threads << Thread.new {
                 formatted_market = market.gsub('/', '-')
 
                 if formatted_market.include? "-USD"
@@ -91,9 +95,12 @@ module ExchangesServices
 
                 ror = {}
                 pft = {}
+                miner_fee = miner_fees[formatted_market.split('-')[0]]
+                dest_exchange = exchanges.find { |e| e[:codename] == arbitrage[:dest_exchange] }
                 investment_amounts.each do |inv_amt|
-                  amt_after_sale = (inv_amt.to_f / buy_price.to_f) * sell_price.to_f
-                  profit = amt_after_sale.to_f - inv_amt.to_f
+                  profit = Format.get_arbitrage_profit(exchange, dest_exchange, inv_amt, buy_price, sell_price, miner_fee)
+                  # amt_after_sale = (inv_amt.to_f / buy_price.to_f) * sell_price.to_f
+                  # profit = amt_after_sale.to_f - inv_amt.to_f
 
                   ror[inv_amt] = profit.to_f / inv_amt.to_f # Rate of return
                   pft[inv_amt] = profit.to_f # Profit
@@ -101,7 +108,8 @@ module ExchangesServices
 
                 data = {
                   buy_price: buy_price,
-                  sell_price: sell_price, 
+                  sell_price: sell_price,
+                  miner_fee: miner_fee,
                   rate_of_return: ror,
                   profit: pft,
                   source_ts: source_ts,
@@ -110,16 +118,16 @@ module ExchangesServices
                 }
               
                 @@firebase.update("arbitrages/#{exchange[:codename]}/#{arbitrage[:dest_exchange]}/#{formatted_market}", data)
-              }
+              # }
             end
           end
         end
 
-        threads.each { |thread| thread.join } 
-      rescue => e
-        # YisusLog.error_debug "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
-        puts "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
-      end
+        # threads.each { |thread| thread.join } 
+      # rescue => e
+        # # YisusLog.error_debug "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
+        # puts "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
+      # end
     end
 
     def self.update_exchanges
@@ -167,6 +175,15 @@ module ExchangesServices
       rescue => e
         # YisusLog.error_debug "ERROR ON UPDATING EXCHANGES PRICES: #{e.inspect}"
         puts "ERROR ON UPDATING EXCHANGES PRICES: #{e.inspect}"
+      end
+    end
+
+    def self.update_miner_fees
+      begin
+        response  = @@firebase.update("miner_fees", CryptoServices::Fee.get_all)
+      rescue => e
+        # YisusLog.error_debug "ERROR ON UPDATING EXCHANGES PRICES: #{e.inspect}"
+        puts "ERROR ON UPDATING MINER FEES: #{e.inspect}"
       end
     end
 
@@ -483,8 +500,55 @@ module ExchangesServices
       }
     end
 
-    def self.set_fees
-      
+    def self.get_arbitrage_profit exc_src, exc_dest, inv_amt, buy_price, sell_price, miner_fee = nil
+      result_amt = inv_amt.to_f
+
+      # Deposit fee
+      if exc_src[:fees].present? && exc_src[:fees][:deposit].present?
+        if exc_src[:fees][:deposit][:type] == 'percentage'
+          result_amt = result_amt / (1.0 + (exc_src[:fees][:deposit][:value].to_f / 100.0))
+        elsif exc_src[:fees][:deposit][:type] == 'number'
+          result_amt = result_amt - exc_src[:fees][:deposit][:value].to_f
+        end
+      end
+
+      # Buy fee
+      if exc_src[:fees].present? && exc_src[:fees][:buy].present?
+        if exc_src[:fees][:buy][:type] == 'percentage'
+          result_amt = (result_amt / buy_price.to_f) * (1.0 - (exc_src[:fees][:buy][:value].to_f / 100.0))
+        elsif exc_src[:fees][:buy][:type] == 'number'
+          result_amt = (result_amt / buy_price.to_f) - exc_src[:fees][:buy][:value].to_f
+        end
+      else
+        result_amt = result_amt / buy_price.to_f
+      end
+
+      # Miner fee
+      if miner_fee.present?
+        result_amt = result_amt - miner_fee.to_f
+      end
+
+      # Sell fee
+      if exc_dest[:fees].present? && exc_dest[:fees][:sell].present?
+        if exc_dest[:fees][:sell][:type] == 'percentage'
+          result_amt = (result_amt * sell_price.to_f) * (1.0 - (exc_dest[:fees][:sell][:value].to_f / 100.0))
+        elsif exc_dest[:fees][:sell][:type] == 'number'
+          result_amt = (result_amt * sell_price.to_f) - exc_dest[:fees][:sell][:value].to_f
+        end
+      else
+        result_amt = result_amt * sell_price.to_f
+      end
+
+      # Withdrawal fee
+      if exc_dest[:fees].present? && exc_dest[:fees][:withdrawal].present?
+        if exc_dest[:fees][:withdrawal][:type] == 'percentage'
+          result_amt = result_amt / (1.0 + (exc_dest[:fees][:withdrawal][:value].to_f / 100.0))
+        elsif exc_dest[:fees][:withdrawal][:type] == 'number'
+          result_amt = result_amt - exc_dest[:fees][:withdrawal][:value].to_f
+        end
+      end
+
+      profit = result_amt - inv_amt
     end
   end
 

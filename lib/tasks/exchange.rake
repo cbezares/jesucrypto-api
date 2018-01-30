@@ -25,9 +25,17 @@ namespace :exchange do
 end
 
 namespace :exchange do
-  desc "Update general exchanges data"
+  desc "Update arbitrage opportunities"
   task update_arbitrage: :environment do
     include ExchangesServices
     ExchangesServices::Status.update_arbitrages
+  end
+end
+
+namespace :exchange do
+  desc "Update miner fees"
+  task update_miner_fee: :environment do
+    include ExchangesServices
+    ExchangesServices::Status.update_miner_fees
   end
 end

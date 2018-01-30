@@ -24,7 +24,16 @@ module CryptoServices
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING TODAY BITCOIN TRANSFER FEE: #{e.inspect}"
       end
-      fee
+      fee.to_f
+    end
+
+    def self.get_all
+      {
+        "BTC" => self.transfer_bitcoin,
+        "CHA" => 0.000736,
+        "ETH" => 0.001,
+        "BCH" => 0.001
+      }
     end
   end
 
