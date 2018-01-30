@@ -2,6 +2,8 @@ require 'clockwork'
 require './config/boot'
 require './config/environment'
 
+include ExchangesServices
+
 module Clockwork
 
   handler do |job|
@@ -9,7 +11,6 @@ module Clockwork
   end
 
   every(1.day, '[clockwork:exchange:update_exchanges] Updating exchanges data.') do
-    CryptoData.get_exchanges
     ExchangesServices::Status.update_exchanges
   end
 
