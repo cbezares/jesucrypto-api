@@ -15,10 +15,101 @@ module ExchangesServices
     "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-p8jzi%40jesucrypto-api.iam.gserviceaccount.com"
   }.to_json
 
+  @@base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
+  @@firebase = Firebase::Client.new(@@base_uri, FIREBASE_PRIVATE_KEY_STRING)
+
   class Status
+
+    # XAP -> ORX (BTC)
+    # ORX -> XAP (BTC)
+    # XAP -> BDA (BTC)
+    # BDA -> XAP (BTC)
+    # BDA -> ORX (BTC, ETH, BCH)
+    # ORX -> BDA (BTC, ETH, BCH)
+    # CMK -> BDA (ETH)
+    # BDA -> CMK (ETH)
+    # CMK -> ORX (ETH)
+    # ORX -> CMK (ETH)
+    # CLB -> BDA (BTC)
+    # BDA -> CLB (BTC)
+    # CLB -> ORX (BTC)
+    # ORX -> CLB (BTC)
+    # SXC -> BDA (BTC, ETH, BCH)
+    # BDA -> SXC (BTC, ETH, BCH)
+    # SXC -> ORX (BTC, ETH, BCH, CHA)
+    # ORX -> SXC (BTC, ETH, BCH, CHA)
+    def self.update_arbitrages
+      data = {}
+      exchange_markets_prices = {}
+      threads = []
+      investment_amounts = [100000, 500000, 1000000, 2000000]
+      
+      # begin
+        arbitraged_exchanges = CryptoData.get_exchanges.select { |e| e[:arbitrages].present? }
+
+        arbitraged_exchanges.each do |exchange|
+          response = @@firebase.get("prices/#{exchange[:codename]}")
+          exchange_markets_prices[exchange[:codename]] = response.body
+        end
+
+        arbitraged_exchanges.each do |exchange|
+          exchange[:arbitrages].each do |arbitrage|
+            arbitrage[:markets].each do |market|
+              threads << Thread.new {
+                formatted_market = market.gsub('/', '-')
+
+                if formatted_market.include? "USD"
+                  if exchange_markets_prices[exchange[:codename]][formatted_market].present?
+                    sell_price      = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market.gsub("USD", "CLP")]["sell"]
+                    destination_ts  = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market.gsub("USD", "CLP")]["timestamp"]
+                    buy_price       = exchange_markets_prices[exchange[:codename]][formatted_market]["buy"] * 620.0
+                    source_ts       = exchange_markets_prices[exchange[:codename]][formatted_market]["timestamp"]
+                  elsif exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market].present?
+                    buy_price       = exchange_markets_prices[exchange[:codename]][formatted_market.gsub("USD", "CLP")]["buy"]
+                    source_ts       = exchange_markets_prices[exchange[:codename]][formatted_market.gsub("USD", "CLP")]["timestamp"]
+                    sell_price      = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["sell"] * 620.0
+                    destination_ts  = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["timestamp"]
+                  end
+                else
+                  sell_price      = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["sell"]
+                  destination_ts  = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["timestamp"]
+                  buy_price       = exchange_markets_prices[exchange[:codename]][formatted_market]["buy"]
+                  source_ts       = exchange_markets_prices[exchange[:codename]][formatted_market]["timestamp"]
+                end
+
+                ror = {}
+                pft = {}
+                investment_amounts.each do |inv_amt|
+                  amt_after_sale = (inv_amt.to_f / buy_price.to_f) * sell_price.to_f
+                  profit = amt_after_sale.to_f - inv_amt.to_f
+
+                  ror[inv_amt] = profit.to_f / inv_amt.to_f # Rate of return
+                  pft[inv_amt] = profit.to_f # Profit
+                end
+
+                data = {
+                  buy_price: buy_price,
+                  sell_price: sell_price, 
+                  rate_of_return: ror,
+                  profit: pft,
+                  source_ts: source_ts,
+                  destination_ts: destination_ts,
+                  timestamp: JSON.parse(Time.now.to_json)
+                }
+              
+                @@firebase.update("arbitrages/#{exchange[:codename]}/#{arbitrage[:dest_exchange]}/#{formatted_market}", data)
+              }
+            end
+          end
+        end
+
+        threads.each { |thread| thread.join } 
+      # rescue => e
+      #   YisusLog.error_debug "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
+      # end
+    end
+
     def self.update_exchanges
-      base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
-      firebase = Firebase::Client.new(base_uri, FIREBASE_PRIVATE_KEY_STRING)
       data = {}
       fees = {}
 
@@ -36,8 +127,8 @@ module ExchangesServices
           end
         end
 
-        response_data = firebase.update("exchanges", data)
-        response_fees = firebase.update("fees", fees)
+        response_data = @@firebase.update("exchanges", data)
+        response_fees = @@firebase.update("fees", fees)
       rescue => e
         YisusLog.error_debug "ERROR ON UPDATING EXCHANGES DATA AND FEES: #{e.inspect}"
       end
@@ -45,8 +136,6 @@ module ExchangesServices
 
     def self.update_prices exchanges
       # exchanges = %w(BDA ORX XAP SXC CLB CMK BSP CBS STT BNC BTK)
-      base_uri  = "https://#{ENV['FIREBASE-PROJECT-ID']}.firebaseio.com/"
-      firebase = Firebase::Client.new(base_uri, FIREBASE_PRIVATE_KEY_STRING)
       threads = []
 
       begin
@@ -55,7 +144,7 @@ module ExchangesServices
             exchange_data = CryptoData.get_exchanges.find { |e| e[:codename] == exchange }
             exchange_data[:markets].each do |market|
               prices    = self.send(exchange_data[:method], market)
-              response  = firebase.update("prices/#{exchange}", prices[exchange])
+              response  = @@firebase.update("prices/#{exchange}", prices[exchange])
               # YisusLog.debug "#{prices.inspect}"
             end
           }
@@ -236,8 +325,8 @@ module ExchangesServices
 
         response2 = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/quotes/" +  formatted_market2), { timeout: 20.0 })
         r2 = JSON.parse(response2.body)
-
-        Format.output_prices(exchange_data[:codename], market, r1["fx_etoe"][formatted_market1]["source_amt"], r2["fx_etoe"][formatted_market2]["destination_amt"])
+        byebug
+        Format.output_prices(exchange_data[:codename], market, r2["fx_etoe"][formatted_market2]["source_amt"], r1["fx_etoe"][formatted_market1]["destination_amt"])
       rescue => e
         YisusLog.error_debug "ERROR ON GETTING XAPO STATUS: #{e.inspect}"
       end
@@ -366,6 +455,10 @@ module ExchangesServices
           }
         }
       }
+    end
+
+    def self.set_fees
+      
     end
   end
 

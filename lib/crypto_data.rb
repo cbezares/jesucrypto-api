@@ -8,6 +8,13 @@ module CryptoData
         codename: 'BDA',
         method: :buda,
         markets: ['BTC/CLP', 'ETH/CLP', 'BCH/CLP'],
+        arbitrages: [
+          { dest_exchange: 'ORX', markets: ['BTC/CLP', 'ETH/CLP', 'BCH/CLP'] },
+          { dest_exchange: 'XAP', markets: ['BTC/CLP', 'BTC/USD'] },
+          # { dest_exchange: 'CMK', markets: ['ETH/CLP'] },
+          # { dest_exchange: 'CLB', markets: ['BTC/CLP'] },
+          # { dest_exchange: 'SXC', markets: ['BTC/USD', 'ETH/USD', 'BCH/USD'] }
+        ],
         api: {
           base_url: 'https://www.surbtc.com/api',
           version: 'v2',
@@ -31,6 +38,13 @@ module CryptoData
         codename: 'ORX',
         method: :orionx,
         markets: ['BTC/CLP', 'ETH/CLP', 'LTC/CLP', 'CHA/CLP', 'BCH/CLP', 'DASH/CLP', 'XRP/CLP'],
+        arbitrages: [
+          { dest_exchange: 'BDA', markets: ['BTC/CLP', 'ETH/CLP', 'BCH/CLP'] },
+          { dest_exchange: 'XAP', markets: ['BTC/CLP', 'BTC/USD'] },
+          # { dest_exchange: 'CMK', markets: ['ETH/CLP'] },
+          # { dest_exchange: 'CLB', markets: ['BTC/CLP'] },
+          # { dest_exchange: 'SXC', markets: ['BTC/USD', 'ETH/USD', 'BCH/USD'] }
+        ],
         api: {
           base_url: 'https://api2.orionx.io/graphql',
           version: 'v2'
@@ -189,7 +203,13 @@ module CryptoData
         url: 'https://app.xapo.com',
         codename: 'XAP',
         method: :xapo,
-        markets: ['USD/BTC', 'CLP/BTC'],
+        markets: ['BTC/USD', 'BTC/CLP'],
+        arbitrages: [
+          { dest_exchange: 'BDA', markets: ['BTC/CLP', 'BTC/USD'] },
+          { dest_exchange: 'ORX', markets: ['BTC/CLP', 'BTC/USD'] },
+          # { dest_exchange: 'CLB', markets: ['BTC/CLP', 'BTC/USD'] },
+          # { dest_exchange: 'SXC', markets: ['BTC/USD'] }
+        ],
         api: {
           base_url: 'https://api.xapo.com',
           version: 'v3'
