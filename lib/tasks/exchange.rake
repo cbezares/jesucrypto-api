@@ -18,7 +18,7 @@ end
 
 namespace :exchange do
   desc "Update general exchanges data"
-  task update_data: :environment do
+  task update_exchanges: :environment do
     include ExchangesServices
     ExchangesServices::Status.update_exchanges
   end
