@@ -44,7 +44,7 @@ module ExchangesServices
       threads = []
       investment_amounts = [100000, 500000, 1000000, 2000000]
       
-      # begin
+      begin
         arbitraged_exchanges = CryptoData.get_exchanges.select { |e| e[:arbitrages].present? }
 
         arbitraged_exchanges.each do |exchange|
@@ -58,7 +58,7 @@ module ExchangesServices
               threads << Thread.new {
                 formatted_market = market.gsub('/', '-')
 
-                if formatted_market.include? "USD"
+                if formatted_market.include? "-USD"
                   if exchange_markets_prices[exchange[:codename]][formatted_market].present?
                     sell_price      = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market.gsub("USD", "CLP")]["sell"]
                     destination_ts  = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market.gsub("USD", "CLP")]["timestamp"]
@@ -68,6 +68,18 @@ module ExchangesServices
                     buy_price       = exchange_markets_prices[exchange[:codename]][formatted_market.gsub("USD", "CLP")]["buy"]
                     source_ts       = exchange_markets_prices[exchange[:codename]][formatted_market.gsub("USD", "CLP")]["timestamp"]
                     sell_price      = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["sell"] * 620.0
+                    destination_ts  = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["timestamp"]
+                  end
+                elsif formatted_market.include? "-BTC"
+                  if exchange_markets_prices[exchange[:codename]][formatted_market].present?
+                    sell_price      = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market.gsub("BTC", "CLP")]["sell"]
+                    destination_ts  = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market.gsub("BTC", "CLP")]["timestamp"]
+                    buy_price       = exchange_markets_prices[exchange[:codename]][formatted_market]["buy"] * 8000000.0
+                    source_ts       = exchange_markets_prices[exchange[:codename]][formatted_market]["timestamp"]
+                  elsif exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market].present?
+                    buy_price       = exchange_markets_prices[exchange[:codename]][formatted_market.gsub("BTC", "CLP")]["buy"]
+                    source_ts       = exchange_markets_prices[exchange[:codename]][formatted_market.gsub("BTC", "CLP")]["timestamp"]
+                    sell_price      = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["sell"] * 8000000.0
                     destination_ts  = exchange_markets_prices[arbitrage[:dest_exchange]][formatted_market]["timestamp"]
                   end
                 else
@@ -104,9 +116,10 @@ module ExchangesServices
         end
 
         threads.each { |thread| thread.join } 
-      # rescue => e
-      #   YisusLog.error_debug "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
-      # end
+      rescue => e
+        # YisusLog.error_debug "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
+        puts "ERROR ON UPDATING ARBITRAGES EXHANGES: #{e.inspect}"
+      end
     end
 
     def self.update_exchanges
@@ -130,7 +143,8 @@ module ExchangesServices
         response_data = @@firebase.update("exchanges", data)
         response_fees = @@firebase.update("fees", fees)
       rescue => e
-        YisusLog.error_debug "ERROR ON UPDATING EXCHANGES DATA AND FEES: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON UPDATING EXCHANGES DATA AND FEES: #{e.inspect}"
+        puts "ERROR ON UPDATING EXCHANGES DATA AND FEES: #{e.inspect}"
       end
     end
 
@@ -151,7 +165,8 @@ module ExchangesServices
         end
         threads.each { |thread| thread.join } 
       rescue => e
-        YisusLog.error_debug "ERROR ON UPDATING EXCHANGES PRICES: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON UPDATING EXCHANGES PRICES: #{e.inspect}"
+        puts "ERROR ON UPDATING EXCHANGES PRICES: #{e.inspect}"
       end
     end
 
@@ -184,7 +199,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["ticker"]["min_ask"][0].to_f, r["ticker"]["max_bid"][0].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING BUDA STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING BUDA STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING BUDA STATUS: #{e.inspect}"
       end
     end
 
@@ -223,7 +239,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["data"]["marketOrderBook"]["sell"][0]["limitPrice"].to_f, r["data"]["marketOrderBook"]["buy"][0]["limitPrice"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING ORIONX STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING ORIONX STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING ORIONX STATUS: #{e.inspect}"
       end
     end
 
@@ -243,7 +260,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["Ask"].to_f, r["Bid"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING SOUTHXCHANGE STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING SOUTHXCHANGE STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING SOUTHXCHANGE STATUS: #{e.inspect}"
       end
     end
 
@@ -264,7 +282,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r[formatted_market]["ask"].to_f, r[formatted_market]["bid"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING BITINKA STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING BITINKA STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING BITINKA STATUS: #{e.inspect}"
       end
     end
 
@@ -284,7 +303,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["sell"].to_f, r["buy"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING CHILEBIT STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING CHILEBIT STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING CHILEBIT STATUS: #{e.inspect}"
       end
     end
 
@@ -304,7 +324,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["data"][0]["ask"].to_f, r["data"][0]["bid"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING CRYPTOMKT STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING CRYPTOMKT STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING CRYPTOMKT STATUS: #{e.inspect}"
       end
     end
 
@@ -325,10 +346,11 @@ module ExchangesServices
 
         response2 = HTTParty.get(URI.escape(api_data[:base_url] + "/" + api_data[:version] + "/quotes/" +  formatted_market2), { timeout: 20.0 })
         r2 = JSON.parse(response2.body)
-        byebug
+
         Format.output_prices(exchange_data[:codename], market, r2["fx_etoe"][formatted_market2]["source_amt"], r1["fx_etoe"][formatted_market1]["destination_amt"])
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING XAPO STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING XAPO STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING XAPO STATUS: #{e.inspect}"
       end
     end
 
@@ -354,7 +376,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["buy"]["data"]["amount"].to_f, r["sell"]["data"]["amount"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING COINBASE STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING COINBASE STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING COINBASE STATUS: #{e.inspect}"
       end
     end
 
@@ -394,7 +417,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["ask"].to_f, r["bid"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING BITSTAMP STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING BITSTAMP STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING BITSTAMP STATUS: #{e.inspect}"
       end
     end
 
@@ -414,7 +438,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["data"]["compra"]["usdbtc"].to_f, r["data"]["venta"]["usdbtc"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING SATOSHITANGO STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING SATOSHITANGO STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING SATOSHITANGO STATUS: #{e.inspect}"
       end
     end
 
@@ -434,7 +459,8 @@ module ExchangesServices
 
         Format.output_prices(exchange_data[:codename], market, r["askPrice"].to_f, r["bidPrice"].to_f)
       rescue => e
-        YisusLog.error_debug "ERROR ON GETTING BINANCE STATUS: #{e.inspect}"
+        # YisusLog.error_debug "ERROR ON GETTING BINANCE STATUS: #{e.inspect}"
+        puts "ERROR ON GETTING BINANCE STATUS: #{e.inspect}"
       end
     end
   end

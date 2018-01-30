@@ -117,7 +117,7 @@ module CryptoData
         url: 'https://www.bitinka.com',
         codename: 'BTK',
         method: :bitinka,
-        markets: ['BTC/CLP', 'BTC/USD', 'BTC/ETH', 'BTC/LTC', 'BTC/XRP'],
+        markets: ['BTC/CLP', 'BTC/USD', 'ETH/BTC', 'LTC/BTC', 'XRP/BTC'],
         api: {
           base_url: 'https://www.bitinka.pe/api',
           format: 'json'

@@ -23,3 +23,11 @@ namespace :exchange do
     ExchangesServices::Status.update_exchanges
   end
 end
+
+namespace :exchange do
+  desc "Update general exchanges data"
+  task update_arbitrage: :environment do
+    include ExchangesServices
+    ExchangesServices::Status.update_arbitrages
+  end
+end
