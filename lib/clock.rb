@@ -1,8 +1,10 @@
 require 'clockwork'
+# require 'exchanges_services'
 require File.expand_path('../../config/boot',        __FILE__)
 require File.expand_path('../../config/environment', __FILE__)
 
 include Clockwork
+include ExchangesServices
 
 handler do |job|
   puts "[clockwork:handler] Running #{job}"
