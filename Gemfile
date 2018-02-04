@@ -56,3 +56,6 @@ gem 'firebase'
 
 # Cron jobs in Ruby
 gem 'whenever', require: false
+
+# A simple wrapper for posting to slack channels
+gem "slack-notifier"

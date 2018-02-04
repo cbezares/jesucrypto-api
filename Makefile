@@ -121,3 +121,10 @@ ifeq ($(wildcard /.dockerenv),)
 else
 	/bin/bash -l -c /etc/my_init.d/0000_init_container.sh;
 endif
+
+clock: start
+ifeq ($(wildcard /.dockerenv),)
+	docker exec -it $(APP_CONTAINER_NAME) /bin/bash -l -c "make clock";
+else
+	TRUSTED_IP=$(DOCKER_HOST_IP) RAILS_ENV=$(ENV) bundle exec clockwork lib/clock.rb
+endif

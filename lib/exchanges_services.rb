@@ -1,6 +1,7 @@
 module ExchangesServices
   include CryptoData
   include CryptoServices
+  include Notifier
   include HTTParty
 
   FIREBASE_PRIVATE_KEY_STRING = {
@@ -99,11 +100,22 @@ module ExchangesServices
                 dest_exchange = exchanges.find { |e| e[:codename] == arbitrage[:dest_exchange] }
                 investment_amounts.each do |inv_amt|
                   profit = Format.get_arbitrage_profit(exchange, dest_exchange, inv_amt, buy_price, sell_price, miner_fee)
-                  # amt_after_sale = (inv_amt.to_f / buy_price.to_f) * sell_price.to_f
-                  # profit = amt_after_sale.to_f - inv_amt.to_f
 
                   ror[inv_amt] = profit.to_f / inv_amt.to_f # Rate of return
                   pft[inv_amt] = profit.to_f # Profit
+
+                  if ror[inv_amt] > (ENV["SLACK-NOTIFICATION-ROR-MIN"].to_f || 0.05)
+                    Notifier.arbitrages({
+                      market: formatted_market,
+                      exc_from: exchange[:codename],
+                      exc_to: dest_exchange[:codename],
+                      buy_price: buy_price.round,
+                      sell_price: sell_price.round,
+                      inv_amt: inv_amt,
+                      profit: pft[inv_amt].round,
+                      rate_of_return: ror[inv_amt]
+                    })
+                  end
                 end
 
                 data = {
