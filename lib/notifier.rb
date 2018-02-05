@@ -1,8 +1,10 @@
 module Notifier
   require 'slack-notifier'
 
-  def arbitrages opportunity
-    slack_notification
+  def self.arbitrages opportunity
+    webhook_url = "https://hooks.slack.com/services/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"
+    channel = "#arbitrages"
+    slack(webhook_url, channel)
 
     @slack_attachment = @slack_attachment.merge({
       fields: [{
@@ -19,47 +21,35 @@ module Notifier
     })
 
     @notifier.ping("Arbitrage Opportunity", attachments: [@slack_attachment])
-
-    ############
-
-    # slack_attachments = []
-
-    # opportunities.each do |opportunity|
-    #   opps = []
-
-    #   opportunity[:details].each do |opp_detail|
-    #     opp_value = ""
-    #     opp_detail[:examples].each do |ex|
-    #       opp_value += "Inversion: #{ex[:inv_amt]}, Profit: #{ex[:profit]}, Rate: %#{ex[:rate_of_return] * 100.0}\n"
-    #     end
-
-    #     opps << {
-    #       title: "Market: #{opp_detail[:market]} (buy: #{opp_detail[:buy_price]}, sell: #{opp_detail[:sell_price]})",
-    #       value: opp_value,
-    #       short: false
-    #     }
-    #   end
-
-    #   slack_attachments << @slack_attachment.merge({
-    #     fields: opps,
-    #     # text: 'Text',
-    #     # pretext: 'Pretext',
-    #     color: 'good',
-    #     title: "#{opportunity[:exc_from]} -> #{opportunity[:exc_to]}",
-    #     title_link: "https://console.firebase.google.com/u/0/project/jesucrypto-api/database/jesucrypto-api/data/arbitrages/#{opportunity[:exc_from]}/#{opportunity[:exc_to]}"
-    #   })
-    # end
-
-    # @notifier.ping("Arbitrage Opportunity", attachments: slack_attachments)
   end
 
-  def slack_notification
-    @notifier = Slack::Notifier.new("https://hooks.slack.com/services/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", channel: '#arbitrages', username: 'webhookbot')
+  def self.error exception
+    webhook_url = "https://hooks.slack.com/services/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"
+    channel = "#errors"
+    slack(webhook_url, channel)
+
+    @slack_attachment = @slack_attachment.merge({
+      fields: [{
+        title: "File:",
+        value: exception.backtrace[0],
+        short: false
+      }],
+      title: exception.message,
+      title_link: "http://www.google.com/search?ie=UTF-8&q=#{exception.message.html_safe}",
+      color: 'danger',
+      icon_emoji: ":x:"
+    })
+
+    @notifier.ping("Error", attachments: [@slack_attachment])
+  end
+
+  def self.slack webhook_url, channel
+    @notifier = Slack::Notifier.new(webhook_url, channel: channel, username: 'webhookbot')
     @slack_attachment = {
       # author_name: "Jesucrypto Heroku",
       fallback: 'Unable to show error',
       footer: "Jesucrypto Heroku",
-      ts: Time.now.strftime('%s'),
+      ts: Time.now.strftime('%s')
     }
   end
 end
